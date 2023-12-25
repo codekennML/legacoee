@@ -10,6 +10,7 @@ class DriverService {
     let response;
 
     switch (type) {
+      //console.log("Loalao")
       case "location_update":
         //
         response = await DirectionsService.handleLocationData(ws, message);
