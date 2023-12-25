@@ -1,6 +1,6 @@
 const { HttpStatusCode } = require("axios")
 const AppError = require("../middlewares/errors/BaseError")
-const GoogleMapsService =  require("../services/googlemaps/index")
+const GoogleMapsService =  require("../services/3rdParty/googlemaps/index")
 const handleArrayBuffer = require("../utils/arrayBufferHandler")
 const { successResMsg } = require("../utils/response")
 const s2 = require('@radarlabs/s2');

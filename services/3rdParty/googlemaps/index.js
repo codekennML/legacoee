@@ -1,5 +1,5 @@
 
-const client =  require("../../config/axios")
+const client =  require("../../../config/axios")
 const polylineDescriptor =  require("@mapbox/polyline")
 
 const googleMapsAxiosClient =  client({ 
@@ -40,7 +40,7 @@ class GoogleMapsService {
 
        //start is a lat,lng object and must be without a space  , end is a placeId 
 
-        const url =  `api/directions/json?destination=${lat},${lng}&mode=tr&transit_mode=bus&units=metric&region=ng&origin=place_id:${place_id}&key=AIzaSyDdYME_PrW_WGGcJOdDpGLym58HFmFpdBw`
+        const url =  `api/directions/json?destination=${lat},${lng}&mode=transit&transit_mode=bus&alternatives=true&units=metric&region=ng&origin=place_id:${place_id}&key=AIzaSyDdYME_PrW_WGGcJOdDpGLym58HFmFpdBw`
         // we will switch this to use mapbox here 
 
         const response =  await this.client.get(url)
@@ -50,9 +50,21 @@ const stringifiedData  = JSON.stringify(response.data)
 
 const { geocoded_waypoints, routes } = JSON.parse(stringifiedData)
 
-console.log(Object.keys(routes[0]))
-const {fare, overview_polyline, legs } = routes[0] 
 
+const polylines  =  []
+const fareSet  =  new Set()
+
+console.log(Object.keys(routes[0]))
+
+
+//We need all three polylines to determine which route the driver currently is one 
+for (const route of routes ){
+  polylines.push(route.overview_polyline)
+  fareSet.add(fare)
+}
+
+
+const {legs } = routes[0] 
 
 const  { arrival_time ,  departure_time , distance , duration, end_location, start_location,start_address, end_address  } = legs[0]
 
@@ -83,15 +95,19 @@ const riderDestinationData =  {
    name : end_address
 }
 
+if(fareSet.size > 1 && fareSet.set < 2 ) { 
+  //Ensure the set has at least two fares so we can show an estimate 
+  fareSet.add(parseInt(fareSet[0]) - 400)
 
+}
 //TODO : Save riders current Destination Data to the DB as favorite places
 
 
 const data =  { 
-  fare,
+  fare : Array.from(fareSet),
   riderDestinationData,
   riderCurrentLocationData,
-  overview_polyline,
+  polylines,
   distance,
   duration,
   arrival_time,

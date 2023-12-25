@@ -1,11 +1,11 @@
 const turf =  require("@turf/turf")
 const polylineDescriptor =  require("@mapbox/polyline")
-const s2 = require('@radarlabs/s2');
+const h3 = require('h3-js');
 
 class PolylineUtils {
 
    constructor() {
-    this.s2Level =  14
+    this.h3level  = 7 
    }
 
   async convertPolylineToLineString(polyline) {
@@ -18,14 +18,12 @@ class PolylineUtils {
     return coordinatesArray 
   }
   
-
   async chunkPolyline(lineString, distance) {
 
     const chunkedPolyline  =  turf.lineChunk(lineString, parseInt(distance), { units : "kilometres"})
 
     return chunkedPolyline
   } 
-
 
   async splitPolylineByNearestPoint(refCoordinates, lineString) {
 
@@ -49,52 +47,63 @@ class PolylineUtils {
 
   } 
 
-  async convertPolylineToS2Covering(polyline){ 
+  async convertPolylineToH3CoveringCellsArray(polyline){ 
    
     //Decode Polyline into array of coordinates
 
     const polylineArray =  await this.convertPolylineToCoordinates(polyline)
   
-    //Convert the coordinates to an s2 cell LatLng
-    const s2LatLngs =  polylineArray.map(coords => new s2.latLng(coords[0], coords[1])) 
- //Get the polyline map  covering area 
-    const s2Polyline   = new s2.Polyline(s2LatLngs) 
+    //Get all h3 cells in the polygon 
+    const coveringH3Indexes = polylineArray.map(coord => h3.geoToH3(coord[0], coord[1], this.h3level));
 
-    const s2CellIds  =  s2.RegionCoverer.getCoveringTokens(s2Polyline, { min: this.s2Level, max: this.s2Level }); 
+    return coveringH3Indexes;
 
-    return s2CellIds
-      
   } 
 
-  async convertCoordinatesToS2CellId(coordinates){
+  async convertCoordinatesToH3CellId(coordinates){
 
-    const s2CellData =  new s2CellId(new s2.latLng(coordinates[0], coordinates[1])) 
+    const h3CellData =  h3.latLngToCell(coordinates.lat, coordinates.lng, )
 
-    return s2CellData
+    return h3CellData
 
   } 
 
 
-  async getS2CentrePointOfSplitPolyline(lineString) {
-    const center =  turf.center(lineString)
-    const s2Data  =  await this.convertCoordinatesToS2CellId(center)
-    return s2Data
-  } 
 
-  async checkPointInsideCovering(covering, point){
+  async getH3CentrePointOfSplitPolyline(lineString) {
+    // const center =  turf.center(lineString)
+    // const s2Data  =  await this.convertCoordinatesToS2CellId(center)
+    // return s2Data
+  }  ''
+  
+  async  getNeighbouringCellsInDistance(originCell, distance) {
+    const cellsInVicinity  =  h3.gridDisk(originCell, 3)
 
-    const pointAtLevel = point.parent(this.s2Level)
+    return cellsInVicinity 
+  }
 
-   const coveringSet =  new Set(covering)
+  async getParentCellAtUpperLevel(originCell){
+     const parentCellId  =  h3.cellToParent(originCell)
 
-   return coveringSet.contains(pointAtLevel.token())
+     return parentCellId
+  }
 
+  async checkPointInsideH3Covering(polyline, point){
+   
+    const covering =  await this.convertPolylineToH3CoveringCellsArray(polyline)
+  
+    const h3Cell = this.convertCoordinatesToH3CellId(point)
+ 
+    const isPointInPolygon = covering.includes(h3Cell)
+  
+    return isPointInPolygon 
+   
   }
 
 
 } 
 
 
-module.exports  =  PolylineUtils
+module.exports  = new PolylineUtils()
 
 

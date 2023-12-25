@@ -1,10 +1,10 @@
 const AppError = require("../middlewares/errors/BaseError")
 
-const tryCatch = (controller) => async(res, req, next) => {
+const tryCatch = (controller) => async(res, req) => {
   try{
     // throw new AppError("Wrong account", "User supplies wrong account", "403" )
     // 
- const result  =  await controller(res, req)
+     const result  =  await controller(res, req)
   return result
   } 
   catch(error) {
