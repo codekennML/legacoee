@@ -1,25 +1,21 @@
-const kafkaHandler  =  require ("./upstash/index")
+const kafkaHandler = require("./upstash/index");
 
 class RideMessaging {
+  constructor(client) {
+    this.client = client;
+  }
 
-    constructor(client) {
-      this.client =  client
-    }
-     
+  async produceRideRequestResponse(message) {
+    const topic = "ride_requests_response";
+    await this.client.produceMessage(message, topic);
+  }
 
-    async produceRideRequestResponse(ws, message) {
-       const topic =  "ride_request_response"
-       await this.client.produceMessage(message, topic)
-
-    }   
-
-    async consumeRideRequest() {
-      
-    }
-
+  async consumeRideRequest(message) {
+    const topic = "ride_request";
+    await this.client.consumeMessage(message, topic);
+  }
 }
 
+kafkaHandler.on("message");
 
-kafkaHandler.on("message", )
-
-module.exports  =  new RideMessaging(kafkaHandler)
+module.exports = new RideMessaging(kafkaHandler);

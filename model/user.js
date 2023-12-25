@@ -1,45 +1,45 @@
-const mongoose = require("mongoose") 
+const mongoose = require("mongoose");
 
-const userSchema  =  new mongoose.Schema({
- 
-    firstname:   { 
-        type : String, 
-        trim  : true,
-        required : [true, "User firstname is required"] , 
-        max : 100
-     },
- 
-    lastname:   { 
-        type : String, 
-        trim  : true,
-        required : [true, "User firstname is required"] , 
-        max : 100
-     }, 
+const userSchema = new mongoose.Schema(
+  {
+    first_name: {
+      type: String,
+      trim: true,
+      required: [true, "User firstname is required"],
+      max: 100,
+    },
 
-     birthDate : { 
-        type : Date, 
-        required : [true,  "User Date of Birth required"]
-     }, 
+    last_name: {
+      type: String,
+      trim: true,
+      required: [true, "User firstname is required"],
+      max: 100,
+    },
 
-     phone_number : {
-        type : Number, 
-        max : 10 ,  // +2348105481234
-        required : [true, "User Phone number is required"]
-     }, 
+    birthDate: {
+      type: Date,
+      required: [true, "User Date of Birth required"],
+    },
 
-     avatar : { 
-        type : String, 
-        default : ".......a...s..s.",
-        required : [true, "User avatar is required" ]
-     }, 
+    phone_number: {
+      type: Number,
+      max: 10, // +2348105481234
+      required: [true, "User Phone number is required"],
+    },
 
+    avatar: {
+      type: String,
+      default: ".......a...s..s.",
+      required: [true, "User avatar is required"],
+    },
+  },
+  {
+    timestamps: true,
 
-}, {
-    timestamps : true , 
+    versionKey: false,
+  }
+);
 
-    versionKey : false 
-})
+const User = mongoose.model("User", userSchema);
 
-const User  =  mongoose.model("User", userSchema)
-
-module.exports  =  User
+module.exports = User;

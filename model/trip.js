@@ -1,57 +1,49 @@
-const mongoose  =  require("mongoose") 
+const mongoose = require("mongoose");
 
-const tripSchema =  new mongoose.Schema({
+const tripSchema = new mongoose.Schema({
+  driverId: {
+    type: mongoose.Types.ObjectId,
+    required: [true, "Trip Driver Id required"],
+    ref: "User",
+  },
 
-    driverId : {
-        type : mongoose.Types.ObjectId,
-        required : [true, "Trip Driver Id required"],
-        ref : "Driver"
-    }, 
+  tripLocations: {
+    start: {
+      coordinates: {
+        type: [Number],
+        required: ["true", "start Coordinates are required"],
+      },
+      name: {
+        type: String,
+      },
 
-    tripLocations : {
-      start : { 
-        coordinates : {
-            type : [Number], 
-            required : ["true", "start Coordinates are required"]
-        }, 
-        name : { 
-            type : String, 
-            
-        },
-
-        placeId : String
-      }, 
-      end : { 
-        coordinates : {
-            type : [Number], 
-            required : ["true", "End coordinates are required"]
-        }, 
-        name : { 
-            type : String, 
-       
-        },
-        placeId : String
-      }, 
-      polylines : []
-    }, 
-
-    ongoing : {
-        type : Boolean,
-        required : [true, "Trip status required"]
-
+      placeId: String,
     },
-    //This will hold the details of the tag along riders 
-    rides : [
+    end: {
+      coordinates: {
+        type: [Number],
+        required: ["true", "End coordinates are required"],
+      },
+      name: {
+        type: String,
+      },
+      placeId: String,
+    },
 
-    ]
-     
-})
+    polylines: [],
+  },
+
+  ongoing: {
+    type: Boolean,
+    required: [true, "Trip status required"],
+  },
+});
 
 tripSchema.index({
-    driverId : 1 , 
-    ongoing : 1 
-})
+  driverId: 1,
+  ongoing: 1,
+});
 
-const Trips  = mongoose.model("Trip", tripSchema)
+const Trips = mongoose.model("Trip", tripSchema);
 
-module.exports  = Trips
+module.exports = Trips;

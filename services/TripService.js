@@ -1,37 +1,19 @@
-const TripsRepository = require("../repository/Trips")
-const sharedModel  = require("../repository/shared/index")
-
+const TripsRepository = require("../repository/Trips");
 
 class TripService {
-   
-    constructor(model) {
-        this.model =  model
-    }
+  constructor(repo) {
+    this.repository = repo;
+  }
 
-    async createDriverTrip(){
+  async createTrip(tripData) {
+    return await this.repository.createTrip(tripData);
+  }
 
-    }
+  async getTripData(tripId) {
+    const trip = await this.repository.getTripInfo(tripId);
 
-    async createRideTrip(){
-
-    }
-
-    async getTripData(tripId){
-       
-        const trip  = await sharedModel.findDocById({
-        id : mongoose.Types.ObjectId(tripId), 
-        select : "ongoing driverId tripLocations"
-          }, this.model, null , [ 
-          { 
-            path : "driverId", 
-            select : "avatar firstName lastName Car Seats"
-          }
-          ])
-    
-          return trip
-    }
-
-
+    return trip;
+  }
 }
 
-module.exports  =  new TripService(TripsRepository)
+module.exports = new TripService(TripsRepository);

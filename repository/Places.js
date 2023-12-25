@@ -1,18 +1,13 @@
-const placesModel  =  require("../model/userPlaces")
+const placesModel = require("../model/userPlaces");
 
 class PlacesRepository {
-  constructor(model){
-    this.model = model
-  } 
-
-  async createNewUserPlace() {
-
-  } 
-
-  async findUserPlace(){
-    
+  constructor(model) {
+    this.model = model;
   }
 
+  async createNewUserPlace() {}
+
+  async findUserPlace() {}
 }
 
-module.exports  =  new PlacesRepository(placesModel)
+module.exports = new PlacesRepository(placesModel);

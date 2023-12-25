@@ -1,12 +1,11 @@
-const axios = require("axios")
+const axios = require("axios");
 
 const createAxiosInstance = (config) => {
+  //config = {
+  //baseURL , timeout , headers
+  //   }
 
-    //config = {
-         //baseURL , timeout , headers
- //   }
+  return axios.create(config);
+};
 
-     return axios.create(config)
-}
-
-module.exports  =  createAxiosInstance
+module.exports = createAxiosInstance;

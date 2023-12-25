@@ -6,5 +6,4 @@ const handleArrayBuffer = (message) => {
   return message;
 };
 
-
-module.exports =  handleArrayBuffer
+module.exports = handleArrayBuffer;

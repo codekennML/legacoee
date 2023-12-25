@@ -6,9 +6,7 @@
  * @returns {Object} - JSON response
  */
 const errorResMsg = (code, message) => {
-  error : true, 
-  message,
-  code
+  error: true, message, code;
 };
 
 /**
@@ -19,12 +17,12 @@ const errorResMsg = (code, message) => {
  */
 const successResMsg = (code, responseData) => {
   const { message, data } = responseData;
-  return{
+  return {
     code,
     message,
-    data
+    data,
+  };
 };
-}
 /**
  * Success JSON to be sent
 
@@ -32,17 +30,20 @@ const successResMsg = (code, responseData) => {
  * @param responseData - data to be sent, it requires a message object
  * @returns {Object} - JSON response
  */
-const customResMsg = ( code,  responseData) => {
+const customResMsg = (code, responseData) => {
   const { message, data } = responseData;
-return {
+  return {
     message,
     data,
-    code
-  }
+    code,
+  };
 };
 
 const redirect = (res, url) => res.status(302).redirect(url);
 
 module.exports = {
-  errorResMsg, successResMsg, customResMsg, redirect
+  errorResMsg,
+  successResMsg,
+  customResMsg,
+  redirect,
 };

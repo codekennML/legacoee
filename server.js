@@ -98,7 +98,7 @@ app
         //Handle Driver WS calls
 
         if (userType === "driver") {
-          tryCatch(async () => {
+          response = tryCatch(async () => {
             //No ongoing trip definitely
             if (!body?.trip) {
               //ToDO : Check that the driver does not have an ongoing trip , because they could have wiped the data
@@ -123,14 +123,14 @@ app
                 destination_place_id
               );
 
-              result = {
+              return (result = {
                 driverId,
                 new_trip: true,
                 polylines,
                 riderCurrentLocationData,
                 riderDestinationData,
                 fare,
-              };
+              });
               //Create a new driver trip
 
               //  const createdTrip  =  await TripService.createTrip({
@@ -145,15 +145,17 @@ app
             } else {
               const data = await TripService.getTripData(tripId);
 
-              result = {
+              const result = {
                 new_trip: false,
                 ...data,
               };
+
+              return result;
             }
 
-            if (result.error) upgradeAborted.aborted = true;
+            // if (result.error) upgradeAborted.aborted = true;
 
-            response = result;
+            // response = result;
 
             //      response  = { data :  { driverId : result.driverId,
             //       polylines : result.driver.polylines,
@@ -174,7 +176,7 @@ app
 
           // let riderResult;
 
-          const riderResult = tryCatch(async () => {
+          response = tryCatch(async () => {
             if (!body.rideId) {
               //No ongoing trip
               //TODO : Check for trip in db first
@@ -198,6 +200,7 @@ app
               );
 
               const riderResult = {
+                new_trip: true,
                 riderId,
                 polyline: polylines[0],
                 riderCurrentLocationData,
@@ -214,6 +217,7 @@ app
               const rideInfo = await RiderService.getRide(body.rideId);
 
               const riderResult = {
+                new_trip: false,
                 riderId: rideInfo.riderId,
                 polyline: rideInfo.rideData.polyline,
                 riderCurrentLocationData: rideInfo.start_location,
@@ -225,11 +229,21 @@ app
             }
           });
 
-          if (riderResult.error) upgradeAborted.aborted = true;
-
           /* You MUST register an abort handler to know if the upgrade was aborted by peer */
         }
+
+        if (response.error) upgradeAborted.aborted = true;
+
+        res.upgrade(
+          { url: url, data: response },
+          /* Use our copies here */
+          secWebSocketKey,
+          secWebSocketProtocol,
+          secWebSocketExtensions,
+          context
+        );
       });
+
       res.onAborted(() => {
         /* We can simply signal that we were aborted */
         upgradeAborted.aborted = true;
@@ -251,7 +265,7 @@ app
         `A WebSocket connection made to server ${process.env.APP_ID} with URL: ${ws.url}`
       );
 
-      ws.send(response, isBinary);
+      ws.send(ws.data, isBinary);
     },
     message: async (ws, message, isBinary) => {
       let response;
