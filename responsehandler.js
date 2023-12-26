@@ -1,12 +1,17 @@
 const tryCatch = require("./utils/tryCatch")
 
-const responseHandler = (basefn, shouldReturnEarly) => async(res, req) => {
+
+const MAX_BODY_SIZE = 2 ** 20 // 1MB
+
+const responseHandler = (basefn) => async(res, req) => {
+ 
 
    res.onAborted(() => {
     res.aborted = true;
     });
 
-    
+console.log(res, req)
+
 
     if (!res.aborted) {
 
@@ -14,41 +19,56 @@ const responseHandler = (basefn, shouldReturnEarly) => async(res, req) => {
 
     let response =  await tryCatch(basefn)(res, req)
    
-    if(shouldReturnEarly)  return response
-  
-    
-    req.response =  response
-
-    if(response.yield) {
-      req.setYield(true)
-    }
-
-    responder(res, req)
-  })
-  }
-}
-
-const responder = (res, req)  => {
-
-  const response  =  req.response 
-
-  if(response?.error){
-    //  console.log(response)
-         return res.cork(async() =>  {
-  res.writeStatus(response?.code ?? "500").end(response.message ?? "Something went wrong." )
-     })
-  
-       
-    } 
-   res.cork(async() =>  {
       const { code, ...data  } =  response
+
+        if(response?.error){
+    //  console.log(response)
+        res.cork(async() =>  {
+        res.writeStatus(response?.code ?? "500").end(response.message ?? "Something went wrong." )
+     })
+    }
+  
   
       res.writeStatus(JSON.stringify(code)).end(JSON.stringify(data));
       // res.end(JSON.stringify(data));
-    });
+    })
+  }
+}
+    // if(shouldReturnEarly)  return response
+  
+    
+    // req.response =  response
+
+    // if(response.yield) {
+    //   req.setYield(true)
+    // }
+
+    // responder(res, req)
+  // })
+  // }
+
+
+// const responder = (res, req)  => {
+
+//   const response  =  req.response 
+
+//   if(response?.error){
+//     //  console.log(response)
+//          return res.cork(async() =>  {
+//   res.writeStatus(response?.code ?? "500").end(response.message ?? "Something went wrong." )
+//      })
+  
+       
+//     } 
+//    res.cork(async() =>  {
+//       const { code, ...data  } =  response
+  
+//       res.writeStatus(JSON.stringify(code)).end(JSON.stringify(data));
+//       // res.end(JSON.stringify(data));
+//     });
   
 
-}
+// }
 
 
 const handlePostRequest = (res,req) => {

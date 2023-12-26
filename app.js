@@ -10,6 +10,6 @@ const port = 9001;
 const app = uWS./*SSL*/App()
 
  
-module.exports = { app, port }
+module.exports = { app, port, uWS }
 
 

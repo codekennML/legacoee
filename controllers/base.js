@@ -3,10 +3,10 @@ const AppError = require("../middlewares/errors/BaseError")
 const GoogleMapsService =  require("../services/3rdParty/googlemaps/index")
 const handleArrayBuffer = require("../utils/arrayBufferHandler")
 const { successResMsg } = require("../utils/response")
-const s2 = require('@radarlabs/s2');
 
 
-const MAX_BODY_SIZE = 2 ** 20 // 1MB
+
+
 
 const checkHealth = async(res, req) =>   { 
   
@@ -71,7 +71,10 @@ const handlePostRequest = (res,req) => {
 // Concatenate all chunks into a single ArrayBuffer
       //  = Buffer.concat(body);
      const concatenatedBuffer = Buffer.concat([data, Buffer.from(chunk)])
-     if (data.length > MAX_BODY_SIZE) {
+     
+     const size = 2 ** 20 // 1MB
+
+     if (data.length > size) {
       throw new AppError("Payload too large", "largePayload", 413)
      }
         // Convert the ArrayBuffer to a string using TextDecoder
@@ -135,34 +138,34 @@ const retrievePolyline =  async(res, req) => {
   
 const convertLocationS2cellId = async(res, req) => {
 
-   const body  = await handlePostRequest(res) 
+  //  const body  = await handlePostRequest(res) 
 
-   const s2Level = 14
+  //  const s2Level = 14
 
-   console.log(body)
+  //  console.log(body)
 
-   const { coordinates } = JSON.parse(body)
+  //  const { coordinates } = JSON.parse(body)
 
-   const { lat, lng } = coordinates
+  //  const { lat, lng } = coordinates
 
-   const s2cell  = new s2.CellId(new s2.LatLng(lat, lng))
+  //  const s2cell  = new s2.CellId(new s2.LatLng(lat, lng))
 
-   const s2CellPoint14 =  s2cell.parent(s2Level) 
+  //  const s2CellPoint14 =  s2cell.parent(s2Level) 
 
-   console.log(s2CellPoint14.token())
-   return { status : "200" , data : s2CellPoint14.token()}
+  //  console.log(s2CellPoint14.token())
+  //  return { status : "200" , data : s2CellPoint14.token()}
 
 
 }
 
 const calculatePolylineOverlap = async(res, req) => {
 
-   const body  = await handlePostRequest(res) 
+  //  const body  = await handlePostRequest(res) 
 
-   const { polyline1, polyline2 } = body
+  //  const { polyline1, polyline2 } = body
 
 
-   const s2Polyline1 =  new s2.polyline(polyline1) 
+  //  const s2Polyline1 =  new s2.polyline(polyline1) 
 
 
 

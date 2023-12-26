@@ -64,4 +64,4 @@ class RiderService {
   async handleRiderWSMessages(message) {}
 }
 
-module.exports = new RiderService(riderRepository);
+module.exports = new RiderService(riderRepo);

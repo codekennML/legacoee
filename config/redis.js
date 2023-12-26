@@ -25,10 +25,10 @@ const twemproxyConfig = {
   };
   
   // Create an instance of the Redis client with Twemproxy configuration
-  const redis = new Redis({
-    sentinels: twemproxyConfig.sentinels,
-    name: twemproxyConfig.name,
-  });
+  // const redis = new Redis({
+  //   sentinels: twemproxyConfig.sentinels,
+  //   name: twemproxyConfig.name,
+  // });
 
 module.exports =  { 
     twemproxyConfig, 

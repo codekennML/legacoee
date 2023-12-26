@@ -62,6 +62,10 @@ class TripsRepository {
 
     return tripData;
   }
+   
+  async getTrips(request){
+    return await sharedModel.returnPaginatedDocs(request, this.model)
+  } 
 }
 
 module.exports = new TripsRepository(TripModel);

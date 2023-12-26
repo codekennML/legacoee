@@ -1,6 +1,6 @@
 const DirectionsService = require("./DirectionsService");
 const { pubsubRedis } = require("./3rdParty/redis/index");
-
+const TripsRepository =  require("../repository/Trips")
 class DriverService {
   constructor() {}
 
@@ -10,6 +10,90 @@ class DriverService {
     let response;
 
     switch (type) {
+
+      case "has_ongoing_trip" : 
+       //Find an existing trip
+      break 
+
+      case "trip_status" : 
+        
+     
+          response = tryCatch(async () => {
+            //No ongoing trip definitely
+            if (!message?.trip) {
+
+              //ToDO : Check that the driver does not have an ongoing trip , because they could have wiped the data
+
+              let result;
+
+              const {
+                driverId,
+                destination_place_id,
+                current_location_coordinates,
+              } = body;
+
+              //Get the directions and send to the FE
+              const {
+                polylines,
+                riderCurrentLocationData,
+                riderDestinationData,
+                fare,
+              } = await DirectionsService.getDirectionsData(
+                current_location_coordinates.lat,
+                current_location_coordinates.lng,
+                destination_place_id
+              );
+
+              return (result = {
+                driverId,
+                new_trip: true,
+                polylines,
+                riderCurrentLocationData,
+                riderDestinationData,
+                fare,
+              });
+              //Create a new driver trip
+
+              //  const createdTrip  =  await TripService.createTrip({
+              //    driverId,
+              //    ongoing : true,
+              //    polylines,
+              //    riderCurrentLocationData,
+              //    riderDestinationData
+              //  })
+
+              // result =  createdTrip
+            } else {
+              const data = await TripService.getTripData(tripId);
+
+              const result = {
+                new_trip: false,
+                ...data,
+              };
+
+              return result;
+            }
+          })
+
+        //     // if (result.error) upgradeAborted.aborted = true;
+
+        //     // response = result;
+
+        //     //      response  = { data :  { driverId : result.driverId,
+        //     //       polylines : result.driver.polylines,
+        //     //       ongoing:result.ongoing,
+        //     //       coordinates  : {
+        //     //        lat : parseInt(body.coordinates.lat),
+        //     //        lng : parseInt(body.coordinates.lng)
+        //     //       }
+
+        //     //      }
+
+        //     // }
+        //   });
+        // }
+
+      break 
       //console.log("Loalao")
       case "location_update":
         //
@@ -17,7 +101,7 @@ class DriverService {
         console.log(response);
 
         break;
-
+  
       case "ride_price_response":
         const {
           driverPrice,
@@ -84,6 +168,13 @@ class DriverService {
         console.log("Holla");
         break;
     }
+  }
+
+  async getDriverTrips(request) {
+    
+  const trips = await TripsRepository.getTrips(request) 
+
+  return trips 
   }
 }
 
