@@ -7,7 +7,7 @@ class TripsRepository {
     this.model = model;
   }
 
-  async createTrip(tripData) {
+  async createTrip(tripData, session) {
     const {
       driverId,
       ongoing = true,
@@ -41,7 +41,7 @@ class TripsRepository {
       ongoing,
     };
 
-    return await sharedModel.createDoc(request, this.model);
+    return await sharedModel.createDoc(request, this.model, session);
   }
 
   async getTripInfo(tripId) {
@@ -62,10 +62,14 @@ class TripsRepository {
 
     return tripData;
   }
-   
-  async getTrips(request){
-    return await sharedModel.returnPaginatedDocs(request, this.model)
-  } 
+
+  async getTrips(request) {
+    return await sharedModel.returnPaginatedDocs(request, this.model);
+  }
+
+  async updateTrip(request) {
+    return await sharedModel.updateDoc(request, this.model);
+  }
 }
 
 module.exports = new TripsRepository(TripModel);

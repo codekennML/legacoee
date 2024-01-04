@@ -1,5 +1,4 @@
 const rideModel = require("../model/rides");
-
 const sharedModel = require("./shared/index");
 
 class RideRepository {
@@ -18,6 +17,18 @@ class RideRepository {
       session,
       populatedQuery
     );
+  }
+
+  async getRides(request) {
+    return await sharedModel.returnPaginatedDocs(request, this.model);
+  }
+
+  async getOneRideDoc(request, session, populatedQuery) {
+    return await sharedModel.findOneDoc(request, session, populatedQuery);
+  }
+
+  async updateRide(request, session) {
+    return await sharedModel.updateDoc(this.model);
   }
 }
 

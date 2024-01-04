@@ -1,4 +1,4 @@
-const AppError = require("../middlewares/errors/BaseError");
+const AppError = require("../../middlewares/errors/BaseError");
 
 const tryCatch = (controller) => async (res, req) => {
   try {

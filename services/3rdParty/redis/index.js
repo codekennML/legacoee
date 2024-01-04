@@ -1,27 +1,33 @@
 // const redisClient = require("ioredis");
-// const { pubsubRedisConfig, twemproxyConfig } = require("../../../config/redis");
+const { pubsubRedisConfig, twemproxyConfig } = require("../../../config/redis");
 
 // const twemproxyRedis = new redisClient(twemproxyConfig);
 
 // const pubsubRedis = new redisClient(pubsubRedisConfig);
 
-// class redisClass {
-//   constructor(redisClient) {
-//     this.client = redisClient;
-//   }
+class RedisClass {
+  constructor(redisClient, config) {
+    this.client = new redisClient(config);
+  }
 
-//   async subscribeToChannel(channelName) {
-//     const response = await this.redisClient.subscribe(channelName);
-//     return response;
-//   }
+  async subscribeToChannel(channelName) {
+    const response = await this.redisClient.subscribe(channelName);
+    return response;
+  }
 
-//   async publishToChannel(channelName) {
-//     const response = await this.redisClient.publish(channelName);
-//   }
-// }
+  async publishToChannel(channelName) {
+    const response = await this.redisClient.publish(channelName);
+  }
 
-// module.exports = {
-//   twemproxyRedis,
-//   pubsubRedis,
-//   redisClass,
-// };
+  async appendDataFromList(listId) {}
+}
+
+const twemproxyRedis = new RedisClass(redisClient, twemproxyConfig);
+
+const pubSubRedis = new RedisClass(redisClient, pubsubRedisConfig);
+
+module.exports = {
+  twemproxyRedis,
+  pubSubRedis,
+  RedisClass,
+};

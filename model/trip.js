@@ -37,6 +37,14 @@ const tripSchema = new mongoose.Schema({
     type: Boolean,
     required: [true, "Trip status required"],
   },
+
+  rides: [
+    {
+      type: mongoose.SchemaTypes.ObjectId,
+      required: true,
+      ref: "Ride",
+    },
+  ],
 });
 
 tripSchema.index({

@@ -1,24 +1,27 @@
 require("dotenv").config();
-const { app, port,uWS } = require("./app");
-const querystring = require('querystring');
+const { app, port, uWS } = require("./app");
+const querystring = require("querystring");
 const {
   twemproxyRedis,
   pubsubRedis,
   redisClass,
+  pubSubRedis,
 } = require("./services/3rdParty/redis/index");
 const AppError = require("./middlewares/errors/BaseError");
 const { driverRoutes, baseRoutes } = require("./routes/base");
 const TripService = require("./services/TripService");
 
 const responseHandler = require("./responsehandler");
-const tryCatch = require("./utils/tryCatch");
 
-const DirectionsService = require("./services/DirectionsService");
-const RideMessageService = require("./services/RideMessageService");
-const UserService = require("./services/UserService");
 const DriverService = require("./services/DriverService");
+
+const driverController = require("./controllers/driverController");
+
 const RiderService = require("./services/RideService");
 const RideService = require("./services/RideService");
+const driverController = require("./controllers/driverController");
+const rideController = require("./controllers/rideController");
+const sendWsMessage = require("./utils/helpers/sendWsMessage");
 
 const base_url = `/api/v1`;
 const baseUrl_user = `api/v1/user`;
@@ -27,21 +30,104 @@ const baseUrl_admin = `api/v1/admin`;
 //Keep count of active connections
 const activeConnections = new Map();
 
-// const pubSubClientSubscriber = new redisClass(pubsubRedis).subscribeToChannel(
-//   `${process.env.APP_ID}`
-// );
+//initialize redis connections
 
-// const pubSubClientPublisher = new redisClass(pubSubRedis).publishToChannel();
+//Twemproxy redis channel for server
+const server_pubsub_channel = `channel:${process.env.APP_ID}`;
 
-// pubSubClient.on("message", (message, channel) => {
-//   const { topic, data } = JSON.parse(message);
-// });
+pubsubRedis.subscribeToChannel(server_pubsub_channel);
+
+pubsubRedis.on("message", async (channel, message) => {
+  if (channel !== `channel:${process.env.APP_ID}`) return;
+
+  const parsedMessage = JSON.parse(message);
+
+  const { topic, ...data } = parsedMessage;
+
+  switch (topic) {
+    case "ride_request_bargain":
+      const { recipients } = data;
+      //We  might need to throttle this to not over burden  the server
+      for (const recipient of recipients) {
+        const { id, recipientData } = recipient;
+
+        const ws = activeConnections[id];
+
+        if (!id || !ws) break;
+
+        ws.send(recipientData);
+
+        sleep(120);
+      }
+
+      break;
+
+    case "driver_price_response":
+      const { riderId, amount, driver, available_seats } = data;
+
+      // const ws = activeConnections[riderId];
+
+      if (!riderId) break;
+
+      const isAlreadyAssigned = acceptedRidesCache[riderId];
+
+      // const response = await pubsubRedis.get(riderId);
+
+      //create a cache for accepted rides on
+
+      if (isAlreadyAssigned) break; //This means the rider has already accepted another drivers request
+
+      const bargainMessage = {
+        amount,
+        driver,
+        available_seats,
+      };
+
+      // await pubSubRedis.publishToChannel(`channel:${riderServerId}`, JSON.stringify(bargainMessage))
+
+      const riderWs = activeConnections[riderId];
+
+      if (!riderWs) break;
+
+      riderWs.send(bargainMessage);
+
+      break;
+
+    default:
+      break;
+  }
+
+  let ws;
+
+  if (riderId) {
+    const ws = activeConnections[riderId];
+  } else {
+    const ws = activeConnections[driverId];
+  }
+  if (!socket) ws.send(data);
+  //Get the message and send it to the owner via their socket
+});
 
 app
   //Public
+  .get(
+    `${base_url}/health`,
+    responseHandler.responseHandler(baseRoutes.checkHealth)
+  )
 
-  //Auth Routes
-  .get(`${base_url}/health`, responseHandler.responseHandler(baseRoutes.checkHealth))
+  //Drivers
+  .post(
+    `${baseUrl_user}/driver/ongoing`,
+    responseHandler.responseHandler(driverController.getOngoingDriverTrip)
+  )
+
+  //Riders
+  .post(
+    `${baseUrl_user}/rider/ongoing`,
+    responseHandler.responseHandler(rideController.getOngoingRiderTrip)
+  )
+  .get(`${baseUrl_user}/rider/fav_places`)
+
   // .post(`${baseUrl}/auth/signup`)
   // .post(`${baseUrl}/auth/login`)
   // .post(`${baseUrl}/auth/forgot_password`)
@@ -69,244 +155,167 @@ app
       );
 
       // Extract query parameters from the URL
-    const queryParamsString = req.getQuery();
+      const queryParamsString = req.getQuery();
 
-    // Parse query parameters into an object
-    const queryParams = querystring.parse(queryParamsString);
+      // Parse query parameters into an object
+      const queryParams = querystring.parse(queryParamsString);
 
       // Convert the object to a standard JavaScript object
-    const body = Object.assign({}, queryParams);
-
- 
-
-    // Handle incoming data
-   
+      const body = Object.assign({}, queryParams);
 
       /* Keep track of abortions */
       const upgradeAborted = { aborted: false };
 
       /* You MUST copy data out of req here, as req is only valid within this immediate callback */
       const url = req.getUrl();
-          const secWebSocketKey = req.getHeader('sec-websocket-key');
-    const secWebSocketProtocol = req.getHeader('sec-websocket-protocol');
-    const secWebSocketExtensions = req.getHeader('sec-websocket-extensions');
-     
-      // res.onAborted(() => {
-      //   /* We can simply signal that we were aborted */
-      //   upgradeAborted.aborted = true;
-      // })
-
-      // let response;
-
-
-     
+      const secWebSocketKey = req.getHeader("sec-websocket-key");
+      const secWebSocketProtocol = req.getHeader("sec-websocket-protocol");
+      const secWebSocketExtensions = req.getHeader("sec-websocket-extensions");
 
       res.onAborted(() => {
         /* We can simply signal that we were aborted */
         upgradeAborted.aborted = true;
-        
-      }); 
-      
+      });
 
-   
-    if (upgradeAborted.aborted) {
+      if (upgradeAborted.aborted) {
         console.log("Ouch! Client disconnected before we could upgrade it!");
         /* You must not upgrade now */
         return;
       }
-    
 
-      res.cork(async() => {
+      let history = {};
 
+      //Get all the trips the driver must have missed
+      if (body.userType === "driver") {
+        (history["topic"] = "trip_history"),
+          //This is to allow for any write that is being done on the rider serversfor this server to complete  first, simply to maintain consistency of data
+          async function getTripDataOnConnection() {
+            //Get all ongoing trips and then rides which have pickedUp as false
+            const ongoingTripWithPendingPickups =
+              await DriverService.getDriverTrips({
+                query: {
+                  _id: { $eq: mongoose.Types.ObjectId(body.userId) },
+                  ongoing: true,
+                },
 
-      res.upgrade(
-          { url: url,
-            data : { 
-              user : body.userId,
-              type : body.userType
+                aggregateData: [
+                  {
+                    $lookup: {
+                      from: "rides",
+                      localField: "rides",
+                      foreignField: "_id",
+                      pipeline: {
+                        $project: {
+                          riderId: 1,
+                          pickedUp: 1,
+                          cancelled: 1,
+                          rideData: 1,
+                        },
+                      },
+                      as: "riders",
+                    },
+                  },
+                  {
+                    $project: {
+                      riders: 1,
+                      tripId,
+                      tripLocations: 1,
+                    },
+                  },
+                ],
+              });
+
+            const { meta, data } = ongoingTripWithPendingPickups;
+
+            if (meta && meta?.count > 0) {
+              history[`currentTrip`] = {
+                tripLocations: data.tripLocations,
+                tripId: data.tripId,
+              };
             }
-            //  data: response
-             },
+
+            if (data.length > 0) {
+              history[`riders`] = data.riders;
+            }
+            return;
+          };
+
+        setTimeout(getTripDataOnConnection, 200);
+      }
+
+      if (body.userType === "rider") {
+        //Get all ongoing rides
+        history[`topic`] = `ride_history`;
+
+        const rideHistory = await RideService.getOneRideDoc({
+          params: {
+            riderId: { $eq: mongoose.Types.ObjectId(body.userId) },
+            ongoing: { $eq: true },
+          },
+          select: "_id",
+        });
+
+        if (!rideHistory) {
+          history[`currentTrip`] = null;
+          return;
+        }
+
+        history[`currentHistory`] - rideHistory;
+      }
+
+      res.cork(async () => {
+        const upgradeData = {
+          url: url,
+          data: {
+            user: body.userId,
+            type: body.userType,
+          },
+          //  data: response
+        };
+
+        if (tripHistory?.topic) {
+          upgradeData[`tripHistory`] = history;
+        }
+        res.upgrade(
+          upgradeData,
           /* Use our copies here */
           secWebSocketKey,
           secWebSocketProtocol,
           secWebSocketExtensions,
           context
         );
-
-  //  console.log("Hello")
-      
-
-
-        // console.log(body)
-
-        //Check if its rider or driver and handle appriopriately
-        // const { userType } = body;
-
-        // if (!userType) upgradeAborted.aborted = true;
-
-        //Handle Driver WS calls
-
-     
-        //Handle Rider WS messages
-      
-        // console.log(response)
-
-        // if (response?.error)upgradeAborted.aborted = true;
-
-       
-    
       });
-
-      
-  
     },
 
-    open: async(ws) => {
+    open: async (ws) => {
       //Keep count of connected clients
       //  await twemproxyRedis.incr(`${process.env.APP_ID}_WS_COUNT`)
+      const { tripHistory, ...wsData } = ws;
       //Keep track of connected clients Id
-      const { user, type} =  ws.data
+      const { user, type } = wsData.data;
 
-      activeConnections.set(user, ws)
+      activeConnections.set(user, wsData);
 
-      console.log(activeConnections)
-     //Subscribe the user to their specific channel
-      ws.subscribe(user); 
+      console.log(activeConnections);
+      //Subscribe the user to their specific channel
+      wsData.subscribe(user);
 
+      if (tripHistory) {
+        sendWsMessage(wsData, tripHistory.topic, tripHistory);
 
-      //Check if user has ongoing trip or ride  
-      let  statusData
-
-      switch(user){
-
-        case "driver" : 
-        const trip = tryCatch(async()=> await DriverService.getDriverTrips({ 
-          query : { 
-            driverId : user,
-            ongoing : { $eq : true}
-          }, 
-          aggregateData  :[
-          { $limit : 1 }
-        ]   
-       })) 
-
-       return trip
-        //Check for ongoing trips and get details
-        break 
-
-        case "rider" :
-
-        const riderRide =  tryCatch(async()=> await RideService.getRides({ 
-        
-          query : { 
-            riderId : user,
-            ongoing : { $eq : true}
-          }, 
-          aggregateData  :[
-          { $limit : 1 }
-        ]   
-       }
-        ) )
-         
-        if(riderRide.length > 0 ) ws.send(JSON.stringify(riderRide))
-       
-      
-          //Check for ongoing ride and fetch details
-        break  
-
-        default:
-        ws.close()
+        // wsData.send(JSON.stringify(tripHistory));
       }
 
-    ws.send()
-  
-      //Subscribe the client to receive incoming messages for it
-
       //Each server will have a unique app id
-       console.log('A WebSocket connected with URL: ' + ws.url);
-
-
-       ws.send(JSON.stringify(statusData))
-        // `A WebSocket connection made to server ${process.env.APP_ID} with URL: ${ws.url}`
-
-        //Check if there is an ongoing trip or ride and send back the data   
-         
-
-
-    
+      console.log("A WebSocket connected with URL: " + ws.url);
     },
-    message: async (ws, message, isBinary) => {
 
-      console.log(message)
-      // let response;
+    message: async (ws, message, isBinary) => {
+      console.log(message);
+      let response;
       // //Check the message type or topic
 
       const newMessage = JSON.parse(message);
-
-  // if (userType === "rider") {
-        //   //Create and manage rider service
-
-        //   // let riderResult;
-
-        //   response = tryCatch(async () => {
-        //     if (!body.rideId) {
-        //       //No ongoing trip
-        //       //TODO : Check for trip in db first
-
-        //       const {
-        //         riderId,
-        //         destination_place_id,
-        //         current_location_coordinates,
-        //       } = body;
-
-        //       //Get the directions and create a new driver trip
-        //       const {
-        //         polylines,
-        //         riderCurrentLocationData,
-        //         riderDestinationData,
-        //         fare,
-        //       } = await DirectionsService.getDirectionsData(
-        //         current_location_coordinates.lat,
-        //         current_location_coordinates.lng,
-        //         destination_place_id
-        //       );
-
-        //       const riderResult = {
-        //         new_trip: true,
-        //         riderId,
-        //         polyline: polylines[0],
-        //         riderCurrentLocationData,
-        //         riderDestinationData,
-        //         fare,
-        //       };
-
-        //       return riderResult;
-
-        //       // const createdRide  =  await RiderService.createNewRide({ polylines, riderCurrentLocationData, riderDestinationData, riderId})
-
-        //       //  riderResult =  createdRide
-        //     } else {
-        //       const rideInfo = await RiderService.getRide(body.rideId);
-
-        //       const riderResult = {
-        //         new_trip: false,
-        //         riderId: rideInfo.riderId,
-        //         polyline: rideInfo.rideData.polyline,
-        //         riderCurrentLocationData: rideInfo.start_location,
-        //         riderDestinationData: rideInfo.destination,
-        //         fare: rideInfo.ride_fare_estimate,
-        //       };
-
-        //       return riderResult;
-        //     }
-        //   });
-
-        //   /* You MUST register an abort handler to know if the upgrade was aborted by peer */
-        // }
-
-
-
 
       const { userType } = newMessage; //User Type is the type of user this message is going to
       if (userType === "driver") {
@@ -316,7 +325,7 @@ app
       } else return;
 
       if (response) {
-        let ok = ws.send(response, isBinary);
+        let ok = sendWsMessage(ws, response.topic, response.data);
 
         console.log(ok);
       }
@@ -328,7 +337,7 @@ app
 
     close: async (ws, code, message) => {
       //Decrease redis  websocket connection count for this server
-      const { user } = ws
+      const { user } = ws;
 
       console.log("WebSocket closed");
 
@@ -337,7 +346,7 @@ app
       // const { driverId, riderId } = ws.data;
       delete activeConnections[user];
 
-      console.log(activeConnections.size)
+      console.log(activeConnections.size);
     },
   })
 

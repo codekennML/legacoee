@@ -1,5 +1,6 @@
 const MapService = require("./3rdParty/googlemaps/index");
 const PolylineUtils = require("../utils/mapUtils/index");
+const { kafka } = require("../services/3rdParty/redis/index");
 
 class RedisDataProcessor {
   constructor() {
@@ -42,11 +43,15 @@ class RedisDataProcessor {
     const newDataCount = newData?.length;
 
     if (newDataCount && newDataCount > 0) {
-      const pipeline = this.redisClient.multi();
+      try {
+        //Send the data to Kafka for persistence to DB ...This will be read by the other consumers and persisted to DB
+        kafka.produceMessage(newData);
 
-      // Iterate over the hashmap and persist data to Redis
-      this.dataHashArray.forEach((driverObject) => {
-        try {
+        //Send to redis for temporary storage
+        const pipeline = this.redisClient.multi();
+
+        // Iterate over the hashmap and persist data to Redis
+        this.dataHashArray.forEach((driverObject) => {
           pipeline.exists(driverObject.cellId, (err, exists) => {
             if (!exists)
               pipeline.hset(driverObject.cellId, "drivers", JSON.stringify([]));
@@ -69,11 +74,11 @@ class RedisDataProcessor {
           this.lastPersistTime = Date.now();
 
           return { success: true };
-        } catch (error) {
-          console.log("Something went wrong");
-          return { error: true, msg: error?.message };
-        }
-      });
+        });
+      } catch (error) {
+        console.log("Something went wrong");
+        return { error: true, msg: error?.message };
+      }
     }
   }
 }
@@ -98,11 +103,12 @@ class DirectionsService {
     return directionData;
   }
 
-  async handleLocationData(ws, message) {
+  async handleLocationData(message) {
     //Encode the coordinates to H3CellId
-    const { coordinates, driverId, driverCarId, available_seats } =
-      JSON.parse(message);
-    const { lat, lng } = coordinates;
+
+    const parsedMessage = JSON.parse(message);
+
+    const { lat, lng } = parsedMessage?.coordinates;
 
     //Convert the location to H3 cell ID
     const cellId = await PolylineUtils.convertCoordinatesToH3CellId({
@@ -110,16 +116,31 @@ class DirectionsService {
       lng,
     });
 
-    const driverData = {
-      cellId,
-      driverId,
-      driverCarId,
-      available_seats,
-      connected_to: process.env.APP_ID,
-    };
+    let locationData;
+
+    if (parsedMessage?.driverId) {
+      locationData = {
+        cellId,
+        coordinates: parsedMessage.coordinates,
+        driverId: parsedMessage.driverId,
+        driverCarId: parsedMessage.driverCarId,
+
+        available_seats: parsedMessage.available_seats,
+        connected_to: process.env.APP_ID,
+      };
+    }
+
+    if (parsedMessage?.riderId) {
+      locationData = {
+        cellId,
+        riderId,
+        coordinates: parsedMessage.coordinates,
+        connected_to: process.env.APP_ID,
+      };
+    }
 
     try {
-      const response = await new RedisDataProcessor().processData(driverData);
+      const response = await new RedisDataProcessor().processData(locationData);
 
       console.log(response);
     } catch (err) {

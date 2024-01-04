@@ -17,6 +17,31 @@ class PolylineUtils {
     return coordinatesArray;
   }
 
+  convertCoordinatesToLineString(coordsArray) {
+    return turf.lineString(coordsArray);
+  }
+
+  async getPointsAtDistance(polyline, percentages) {
+    const decodedLine = turf.lineString(polyline);
+
+    // Calculate line length
+    const lineLength = turf.length(decodedLine);
+
+    const points = [];
+
+    // Calculate target distances for each percentage
+    for (const percentage of percentages) {
+      const targetDistance = lineLength * percentage;
+
+      // Interpolate point at target distance
+      const interpolatedPoint = turf.along(decodedLine, targetDistance);
+      const [lon, lat] = turf.getCoord(interpolatedPoint);
+      points.push([lat, lon]);
+    }
+
+    return points;
+  }
+
   async chunkPolyline(lineString, distance) {
     const chunkedPolyline = turf.lineChunk(lineString, parseInt(distance), {
       units: "kilometres",
@@ -51,23 +76,70 @@ class PolylineUtils {
     //TODO : Store this back as the new driver location
   }
 
+  async getDistanceTravelledAlongPolyline(currentLocation) {
+    const decodedPolyline = await this.convertPolylineToCoordinates(polyline);
+
+    //Get the nearest point on the polyline to the coordinates
+    const location = turf.point([currentLocation.lat, currentLocation.lng]);
+
+    const nearestPointOnLine = turf.nearestPointOnLine(
+      location,
+      decodedPolyline
+    );
+
+    const closestPointIndex = decodedPolyline.findIndex((coord) =>
+      turf.booleanEqual(turf.point(coord), nearestPointOnLine)
+    );
+
+    const segmentCoordinates = decodedPolyline.slice(0, closestPointIndex + 1);
+
+    const distanceTravelled = turf.length(
+      turf.lineString([...segmentCoordinates], { units: "meters" })
+    );
+
+    return distanceTravelled;
+  }
+
+  calculateDistanceBetweenPoints(start, end, units) {
+    const startPoint = turf.point([start.lat, start.lng]);
+    const endPoint = turf.point([end.lat, end.lng]);
+
+    const distance = turf.distance(startPoint, endPoint, { units });
+
+    return distance;
+  }
+
   async convertPolylineToH3CoveringCellsArray(polyline) {
     //Decode Polyline into array of coordinates
 
     const polylineArray = await this.convertPolylineToCoordinates(polyline);
 
     //Get all h3 cells in the polygon
-    const coveringH3Indexes = polylineArray.map((coord) =>
-      h3.geoToH3(coord[0], coord[1], this.h3level)
-    );
+    // const coveringH3Indexes = polylineArray.map((coord) =>
+    //   h3.geoToH3(coord[0], coord[1], this.h3level)
+    // );
+
+    const coveringH3Indexes = h3.polyfill(polylineArray);
 
     return coveringH3Indexes;
   }
 
-  async convertCoordinatesToH3CellId(coordinates) {
-    const h3CellData = h3.latLngToCell(coordinates.lat, coordinates.lng);
+  async convertCoordinatesToH3CellId(coordinates, level) {
+    const h3CellData = h3.latLngToCell(
+      coordinates.lat,
+      coordinates.lng,
+      parseInt(level ?? this.h3level)
+    );
 
     return h3CellData;
+  }
+
+  getParentCell(cellId, level) {
+    return h3.cellToParent(cellId, parseInt(level));
+  }
+
+  getParentChildrenCells(parent, level) {
+    return h3.cellToChilderen(parent, parseInt(level));
   }
 
   async getH3CentrePointOfSplitPolyline(lineString) {
@@ -78,7 +150,7 @@ class PolylineUtils {
   "";
 
   async getNeighbouringCellsInDistance(originCell, distance) {
-    const cellsInVicinity = h3.gridDisk(originCell, 3);
+    const cellsInVicinity = h3.gridDisk(originCell, parseInt(distance));
 
     return cellsInVicinity;
   }
@@ -97,6 +169,13 @@ class PolylineUtils {
     const isPointInPolygon = covering.includes(h3Cell);
 
     return isPointInPolygon;
+  }
+
+  async snapToRoads(rrouteArray, timestampArray) {
+    //send request to our OSRM server to get the reconstructed route
+    const reconstructedRoute = [];
+
+    return await reconstructedRoute;
   }
 }
 
