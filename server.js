@@ -22,6 +22,7 @@ const RideService = require("./services/RideService");
 const driverController = require("./controllers/driverController");
 const rideController = require("./controllers/rideController");
 const sendWsMessage = require("./utils/helpers/sendWsMessage");
+const authController = require("./controllers/authController");
 
 const base_url = `/api/v1`;
 const baseUrl_user = `api/v1/user`;
@@ -93,6 +94,9 @@ pubsubRedis.on("message", async (channel, message) => {
 
       break;
 
+    case "pickup _cancelled":
+      break;
+
     default:
       break;
   }
@@ -115,6 +119,17 @@ app
     responseHandler.responseHandler(baseRoutes.checkHealth)
   )
 
+  //Auth
+  .post(
+    `${baseUrl_user}`,
+    responseHandler.responseHandler(authController.signup)
+  )
+  // .post(`${baseUrl}/auth/signup`)
+  // .post(`${baseUrl}/auth/login`)
+  // .post(`${baseUrl}/auth/forgot_password`)
+  // .post(`${baseUrl}/auth/reset_password`)
+  // .post(`${baseUrl}/auth/activate_account`)
+
   //Drivers
   .post(
     `${baseUrl_user}/driver/ongoing`,
@@ -127,12 +142,6 @@ app
     responseHandler.responseHandler(rideController.getOngoingRiderTrip)
   )
   .get(`${baseUrl_user}/rider/fav_places`)
-
-  // .post(`${baseUrl}/auth/signup`)
-  // .post(`${baseUrl}/auth/login`)
-  // .post(`${baseUrl}/auth/forgot_password`)
-  // .post(`${baseUrl}/auth/reset_password`)
-  // .post(`${baseUrl}/auth/activate_account`)
 
   //Authenticated Routes -  USERS
   // .post(

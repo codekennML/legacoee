@@ -9,6 +9,22 @@ const userSchema = new mongoose.Schema(
       max: 100,
     },
 
+    email: {
+      type: String,
+      unique: true,
+      max: 255,
+      required: true,
+      trim: true,
+    },
+
+    googleId: {
+      type: String,
+    },
+
+    avatar: {
+      type: String,
+    },
+
     last_name: {
       type: String,
       trim: true,
@@ -31,6 +47,30 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: ".......a...s..s.",
       required: [true, "User avatar is required"],
+    },
+
+    password: {
+      type: String,
+      required: function () {
+        this.googleId ? false : true;
+      },
+    },
+
+    verifyHash: {
+      type: String,
+      required: true,
+    },
+
+    verified: { type: Boolean, default: false },
+
+    active: {
+      type: Boolean,
+      default: false,
+    },
+
+    suspended: {
+      type: Boolean,
+      default: false,
     },
   },
   {
