@@ -1,15 +1,57 @@
-// require("dotenv")
 const uWS = require('uWebSockets.js');
+const port  =  9001
 
 
-/* Minimal SSL/non-SSL example */
+const handleMiddlewares = (middlewares) => {
+    return async (res, req) => {
+        // Enhance the res object
+        const enhanceRes = (res) => {
+            const originalEnd = res.end.bind(res);
+            res.finished = false;
 
-// const uWS = require('../dist/uws.js');
-const port = 9001;
+            res.end = (...args) => {
+                if (!res.finished) {
+                    originalEnd(...args);
+                    res.finished = true;
+                }
+                return res;
+            };
+        };
 
-const app = uWS./*SSL*/App()
+        enhanceRes(res);
 
- 
-module.exports = { app, port, uWS }
+        res.onAborted(() => {
+            res.aborted = true;
+            res.finished = true;
+        });
 
+        // Middleware runner
+        const runMiddlewares = async (res, req) => {
+           
+            const nextMiddleware = async (index) => {
+                if (index >= middlewares.length || res.finished) return;
 
+                const middleware = middlewares[index];
+                const nextIndex = index + 1
+                 const hasNext =  middlewares[nextIndex]
+
+                if (middleware) {
+                    await middleware(req, res);
+                    if(hasNext) {
+                        await nextMiddleware(nextIndex)
+                    }
+
+                     
+                }
+            };
+
+            await nextMiddleware(0);
+        };
+
+        await runMiddlewares(req, res);
+    };
+};
+
+const app = uWS.App()
+
+module.exports  =  {app,  port, handleMiddlewares, uWS }

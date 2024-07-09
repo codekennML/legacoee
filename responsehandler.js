@@ -1,93 +1,91 @@
-const tryCatch = require("./utils/helpers/tryCatch");
+
+const  AppError = require("./src/middlewares/errors/BaseError")
+const { StatusCodes, getReasonPhrase } = require("http-status-codes")
 
 const MAX_BODY_SIZE = 2 ** 20; // 1MB
 
-const responseHandler = (basefn) => async (res, req) => {
-  res.onAborted(() => {
-    res.aborted = true;
-  });
+const responseHandler = (
+  basefn
+) => {
 
-  if (!res.aborted) {
-    res.cork(async () => {
-      let response = await tryCatch(basefn)(res, req);
 
-      const { status, ...data } = response;
+  return async (res, req) => {
+    res.onAborted(() => {
+      res.aborted = true;
+    });
 
-      if (response?.error) {
-        //  console.log(response)
-        res.cork(async () => {
-          res
-            .writeStatus(response?.status ?? "500")
-            .end(response.message ?? "Something went wrong.");
-        });
+
+    if (!res.aborted) {
+      let response;
+
+      try {
+        response = await basefn(res, req);
+      } catch (error) {
+        console.log("log", error);
+        if (error instanceof AppError) {
+          response = {
+            errMsg: error.message,
+            status: error.statusCode,
+            error: true,
+          };
+        } else {
+          response = {
+            error: true,
+            errMsg: getReasonPhrase(StatusCodes.INTERNAL_SERVER_ERROR),
+            status: StatusCodes.INTERNAL_SERVER_ERROR,
+          };
+        }
       }
 
-      res.writeStatus(JSON.stringify(code)).end(JSON.stringify(data));
-      // res.end(JSON.stringify(data));
-    });
-  }
+      res.cork(() => {
+        res
+          .writeStatus(JSON.stringify(response.status))
+          .end(JSON.stringify(response?.data ?? response.errMsg));
+      });
+    }
+  };
 };
-// if(shouldReturnEarly)  return response
 
-// req.response =  response
-
-// if(response.yield) {
-//   req.setYield(true)
-// }
-
-// responder(res, req)
-// })
-// }
-
-// const responder = (res, req)  => {
-
-//   const response  =  req.response
-
-//   if(response?.error){
-//     //  console.log(response)
-//          return res.cork(async() =>  {
-//   res.writeStatus(response?.code ?? "500").end(response.message ?? "Something went wrong." )
-//      })
-
-//     }
-//    res.cork(async() =>  {
-//       const { code, ...data  } =  response
-
-//       res.writeStatus(JSON.stringify(code)).end(JSON.stringify(data));
-//       // res.end(JSON.stringify(data));
-//     });
-
-// }
-
-const handlePostRequest = (res, req) => {
+const readJSON = (res) =>  {
   return new Promise((resolve, reject) => {
-    let body = "";
+    const buffer  = [];
 
-    let data = Buffer.from([]);
+    res.onData((dataChunk,  isLast) => {
 
-    // Set up a callback for incoming data chunks
-    res.onData((chunk, isLast) => {
-      body += chunk;
+      console.log(dataChunk, "adatagsnd")
+      const chunk = Buffer.from(dataChunk);
 
       if (isLast) {
-        // Modify data from the outer code
-        // const modifiedData = handleArrayBuffer(body)
-        // Concatenate all chunks into a single ArrayBuffer
-        //  = Buffer.concat(body);
-        const concatenatedBuffer = Buffer.concat([data, Buffer.from(chunk)]);
+        try {
+          if (buffer.length > 0) {
+            buffer.push(chunk);
+            const concatenatedBuffer = Buffer.concat(buffer);
+            if (concatenatedBuffer.length > MAX_BODY_SIZE) {
+              throw new Error("Payload too large");
+            }
+            const jsonString = concatenatedBuffer.toString("utf-8");
+            const json = JSON.parse(jsonString);
+            resolve(json);
+          } else {
 
-        if (data.length > MAX_BODY_SIZE) {
-          throw new AppError("Payload too large", "largePayload", 413);
+            console.log(buffer.length)
+            if (chunk.length > MAX_BODY_SIZE) {
+              throw new Error("Payload too large");
+            }
+            console.log(chunk.toString("utf-8"))
+            const json = JSON.parse(chunk.toString("utf-8"));
+            resolve(json);
+          }
+        } catch (e) {
+          // Log or handle the error
+          console.error("Error parsing JSON:", e);
+          reject(e);
         }
-        // Convert the ArrayBuffer to a string using TextDecoder
-        const textDecoder = new TextDecoder("utf-8");
-        const modifiedData = textDecoder.decode(concatenatedBuffer);
-
-        // Resolve the promise with the modified data
-        resolve(modifiedData);
+      } else {
+        buffer.push(chunk);
       }
     });
   });
-};
+}
 
-module.exports = { responseHandler, handlePostRequest };
+module.exports = {responseHandler, readJSON};
