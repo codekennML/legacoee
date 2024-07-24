@@ -1,6 +1,5 @@
 
-
-const baseRoutes  =  require("../controllers/base")
+const baseRoutes = require("../controllers/base")
 
 
 module.exports = {

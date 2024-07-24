@@ -1,39 +1,38 @@
-const mongoose = require("mongoose");
-require("dotenv").config();
-
+const mongoose = require("mongoose")
+const DATABASE_URI = process.env.DATABASE_URI
 let retries = 0;
+
+console.log("sOMEEMME", DATABASE_URI)
 
 const connectDBWithRetry = async () => {
   const delay = Math.pow(2, retries) * 1000; // Exponential backoff
 
   try {
-    await mongoose.connect(process.env.DATABASE_URI, {
-      useUnifiedTopology: false,
-      useNewUrlParser: true,
-    });
+    await mongoose.connect(DATABASE_URI);
 
     mongoose.connection.once("open", () => {
       console.log("Connection Success");
     });
+
+    console.log("MongoDB connected successfully!");
   } catch (error) {
     if (retries < 3) {
-      console.log(`Retrying connection in ${delay / 1000} seconds...`);
+      console.log(`Retrying DB connection in ${delay / 1000} seconds...`);
       retries++;
       setTimeout(connectDBWithRetry, delay);
     } else {
       throw new Error("Failed to connect to MongoDB after multiple retries");
     }
   }
-
-  // console.log("MongoDB connected successfully!");
 };
 
 async function startDB() {
   try {
+    console.log("Connecting")
     await connectDBWithRetry();
   } catch (error) {
     console.log(error.message);
   }
 }
 
-module.exports = startDB;
+module.exports = startDB

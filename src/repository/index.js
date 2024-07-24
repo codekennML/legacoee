@@ -7,9 +7,9 @@ class DBLayer {
     this.model = model;
   }
 
-  async createDocs(data,session) {
-    
-    const createdDocs = await this.model.create(data, options);
+  async createDocs(data, session) {
+
+    const createdDocs = await this.model.create(data, session);
 
     return createdDocs;
   }
@@ -70,9 +70,9 @@ class DBLayer {
   async findDocById(queryData) {
 
     const { query, select, populatedQuery, session, lean } = queryData;
-      
+
     console.log(query, "GHU")
-  
+
     if (!populatedQuery && !lean) {
       console.log(queryData, "TYue")
       const data = await this.model.findById(query, select, { session });
@@ -81,13 +81,13 @@ class DBLayer {
     }
 
     if (!populatedQuery && lean) {
-  
+
       const data = await this.model.findById(query, select, { session }).lean();
       return data;
     }
 
     if (populatedQuery && lean) {
-   
+
       const data = await this.model
         .findById(query, select, { session })
         .populate(populatedQuery)
@@ -101,7 +101,7 @@ class DBLayer {
 
   async aggregateData(request) {
 
-    if(request?.session){
+    if (request?.session) {
 
       return this.model.aggregate(request.pipeline).session(request.session)
     }
@@ -110,7 +110,7 @@ class DBLayer {
 
       request.pipeline
     )
-  
+
     return data
 
   }
@@ -172,6 +172,8 @@ class DBLayer {
     const update = request.updateData;
     const options = request.options;
     const filter = request.docToUpdate;
+
+    console.log(this.model, "model")
     const data = await this.model.findOneAndUpdate(filter, update, options);
 
     return data;
@@ -199,7 +201,7 @@ class DBLayer {
 
   //Use this when you want to perform an aggregation that is not linked to pagination of data
   async aggregateDocs(request, session) {
-    const result = await this.model.aggregate(request, {session});
+    const result = await this.model.aggregate(request, { session });
     return result;
   }
 
@@ -219,4 +221,4 @@ class DBLayer {
   }
 }
 
-module.exports =  DBLayer;
+module.exports = DBLayer;

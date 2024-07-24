@@ -8,25 +8,35 @@ class PolylineUtils {
     this.h3level = 7;
   }
 
+  async getNearestPointOnLine(lineString, point) {
+
+    const turfPoint = turf.point([point.lat, point.lng])
+
+    const coordinates = turf.nearestPointOnLine(turf.lineString, point)
+
+    return coordinates
+
+  }
+
+
   async convertPolylineToLineString(polyline) {
     const lineString = turf.lineString(polyline);
     return lineString;
   }
 
-  async getSurroundingCellsAtRadius (cellId)  {
-       let  result  = []
-        try{ 
-          const cells =  await h3.gridDisk(cellId) 
+  async getSurroundingCellsAtRadius(cellId, size) {
+    let result = []
+    try {
+      const cells = h3.gridDisk(cellId, size)
+      result = cells
 
-          result =  cells
+    } catch (e) {
 
-        }catch (e){ 
+      errorLogger.info(`Error getting cells around cellId -  ${cellId} - level - ${level}- err - ${e}`)
 
-          errorLogger.info(`Error getting cells around cellId -  ${cellId} - err - ${e}`)
-            
-        }
+    }
 
-        return result
+    return result
   }
 
   async convertPolylineToCoordinates(polyline) {
@@ -142,8 +152,8 @@ class PolylineUtils {
   }
 
   async convertCoordinatesToH3CellId(coordinates, level) {
-    if(!coordinates?.lat && !coordinates?.lng) return null
-    
+    if (!coordinates?.lat && !coordinates?.lng) return null
+
     const h3CellData = h3.latLngToCell(
       coordinates.lat,
       coordinates.lng,
@@ -168,11 +178,7 @@ class PolylineUtils {
   }
 
 
-  async getNeighbouringCellsInDistance(originCell, distance) {
-    const cellsInVicinity = h3.gridDisk(originCell, parseInt(distance));
 
-    return cellsInVicinity;
-  }
 
   async getParentCellAtUpperLevel(originCell) {
     const parentCellId = h3.cellToParent(originCell);

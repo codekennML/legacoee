@@ -1,5 +1,5 @@
-const  Message =  require("../model/message")
-const  DBLayer = require( "./index")
+const Message = require("../model/message")
+const DBLayer = require("./index")
 
 
 class MessageRepository {
@@ -13,7 +13,7 @@ class MessageRepository {
     request,
     session
   ) {
-    let createdMessages  = [];
+    let createdMessages = [];
 
     createdMessages = await this.messageDBLayer.createDocs([request], session);
 
@@ -42,7 +42,7 @@ class MessageRepository {
   }
 
 
-  async deleteMessages (request ) {
+  async deleteMessages(request) {
     return await this.messageDBLayer.deleteDocs(request)
   }
 
@@ -52,10 +52,10 @@ class MessageRepository {
   //     return result;
   //   }
 
-  
+
 }
 
- const MessageDataLayer = new MessageRepository(Message);
+const MessageDataLayer = new MessageRepository(Message);
 
- module.exports =  { MessageDataLayer}
+module.exports = { MessageDataLayer }
 

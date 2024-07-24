@@ -1,4 +1,4 @@
-const  { MessageDataLayer } = require("../repository/message")
+const { MessageDataLayer } = require("../repository/message")
 
 
 class MessageService {
@@ -7,7 +7,7 @@ class MessageService {
     this.message = service;
   }
 
-  async createMessage(request) {
+  async createMessage(request, session) {
     const message = await this.message.createMessage(request, session);
 
     return message; //tThis should return an array of one message only
@@ -28,8 +28,8 @@ class MessageService {
   }
 
   async deleteMessages(request) {
-     
-    const deletedMessages  = await this.message.deleteMessages(request)
+
+    const deletedMessages = await this.message.deleteMessages(request)
 
     return deletedMessages
 

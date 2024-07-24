@@ -1,19 +1,21 @@
 const Chat = require("../model/chat")
-const  DBLayer = require("./index")
+const DBLayer = require("./index")
 
 
 class ChatRepository {
 
 
   constructor(model) {
+    console.log(model)
     this.chatDBLayer = new DBLayer(model);
+
   }
 
   async createChat(
     request,
     session
   ) {
-    let createdChats  = [];
+    let createdChats = [];
 
     createdChats = await this.chatDBLayer.createDocs([request], session);
 
@@ -37,6 +39,7 @@ class ChatRepository {
   }
 
   async updateChat(request) {
+    console.log(this.chatDBLayer)
     const updatedChat = await this.chatDBLayer.updateDoc({
       docToUpdate: request.docToUpdate,
       updateData: request.updateData,
@@ -64,6 +67,6 @@ class ChatRepository {
 }
 
 const ChatDataLayer = new ChatRepository(Chat);
-module.exports =  { ChatDataLayer}
+module.exports = { ChatDataLayer }
 
 

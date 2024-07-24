@@ -1,0 +1,144 @@
+//DRIVER 
+
+
+//rideRequest
+{
+    "location": {
+        "lat": 6.4382876,  //circle mall
+            "lng": 3.5061364
+    },
+    "destination" : {
+        "lat" : 6.4293711,   //sigmabase apartments
+            "lng" : 3.4286398
+    },
+    "tripId": "ge63635hdgr73jffs455",
+        "topic": "driver_location_update",
+            "availableSeats": 3,
+                "type": "locationUpdates"
+}
+
+//NEGOTIATE_PRICE
+
+{
+    "tripId" : "2342553fjfjjjjf",
+        "rideId": "abdehehf",
+            "riderId": "667e966ce50e90d32592cd11",
+                "topic": "negotiate_price",
+                    "riderPushId": "ttg33h474u4jkrjhyfrjkir8rjrjjrf",
+                        "type": "negotiatePrice",
+                            "amount" : 1200
+}
+
+
+//CANCEL RIDE
+
+{
+    "tripId" : "2342553fjfjjjjf",
+        "rideId": "abdehehf",
+            "riderId": "667e966ce50e90d32592cd11",
+                "topic": "ride_cancelled_driver",
+                    "type" : "cancelRide",
+                        "riderPushId": "ttg33h474u4jkrjhyfrjkir8rjrjjrf"
+}
+
+
+//START RIDE 
+{
+    "tripId" : "2342553fjfjjjjf",
+        "rideId": "abdehehf",
+            "riderId": "667e966ce50e90d32592cd11",
+                "topic": "ride_started",
+                    "type" : "startRide",
+                        "riderPushId": "ttg33h474u4jkrjhyfrjkir8rjrjjrf",
+                            "chatId": "667e966ce50e90d32592cd11",
+                                "driverId": "668e4801d9a9657671fc1d42"
+
+}
+
+//CHAT MESSAGE 
+
+
+
+{
+    "tripId" : "2342553fjfjjjjf",
+        "riderId": "667e966ce50e90d32592cd11",
+            "topic": "ride_chat_driver",
+                "type" : "chatMessage",
+                    "sentAt": "2024-07-11T17:30:20.944Z",
+                        "body": "I am on my way",
+                            "riderPushId": "ttg33h474u4jkrjhyfrjkir8rjrjjrf",
+                                "chatId": "667e966ce50e90d32592cd11",
+                                    "driverId": "668e4801d9a9657671fc1d42"
+
+}
+
+//DRIVER ARRIVED
+{
+    "tripId" : "2342553fjfjjjjf",
+        "rideId": "abdehehf",
+            "riderId": "667e966ce50e90d32592cd11",
+                "topic": "driver_arrived",
+                    "type" : "driverArrived",
+                        "riderPushId": "ttg33h474u4jkrjhyfrjkir8rjrjjrf",
+                            "driverId": "668e4801d9a9657671fc1d42"
+
+}
+//END RIDE 
+
+{
+    "tripId" : "2342553fjfjjjjf",
+        "rideId": "abdehehf",
+            "riderId": "667e966ce50e90d32592cd11",
+                "topic": "driver_end_ride",
+                    "type" : "endRide",
+                        "riderPushId": "ttg33h474u4jkrjhyfrjkir8rjrjjrf"
+
+}
+
+//End Trip 
+{
+    "location": {
+        "lat": 6.4391816,  //SUPERSAVER SUPERMARKET
+            "lng": 3.5080789
+    },
+
+    "prevLocation": {
+        "lat": 6.4297647, //eko hotel
+            "lng": 3.428941
+    },
+    "rideId": "abdehehf",
+        "topic": "end_trip",
+            "tripId" : "2342553fjfjjjjf",
+                "driverId" : "668e4801d9a9657671fc1d42",
+                    "type": "endTrip"
+
+}
+
+
+
+
+
+
+
+
+
+//RIDER 
+
+//RIDE REQUEST 
+// >>>>>>>>>>> locationUpdates
+{
+    "location": {
+        "lat": 6.4391816,  //SUPERSAVER SUPERMARKET
+            "lng": 3.5080789
+    },
+    "budget": 700,
+        "requestedSeats": 1,
+            "destination": {
+        "lat": 6.4297647, //eko hotel
+            "lng": 3.428941
+    },
+    "rideId": "abdehehf",
+        "topic": "ride_request",
+            "type": "rideRequest"
+    "riderPushId" : "142566363"
+}

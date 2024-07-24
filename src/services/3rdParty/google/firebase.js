@@ -1,8 +1,8 @@
 
-import * as admin from "firebase-admin"
-import { GOOGLESERVICEACCOUNTFILE } from '../../../config/constants/notification';
+const admin = require("firebase-admin")
 
-const serviceAccount = GOOGLESERVICEACCOUNTFILE
+const serviceAccount =  process.env.GOOGLE_SERVICE_ACCOUNT_FILE_ADDRESS 
+
 
 admin.initializeApp({
 
@@ -10,5 +10,6 @@ admin.initializeApp({
 
 });
 
+const notificationFCM =  admin.messaging()
 
-export const notificationFCM = admin.messaging()
+module.exports  =  notificationFCM

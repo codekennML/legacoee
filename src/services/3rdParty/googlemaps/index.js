@@ -9,6 +9,8 @@ const googleMapsAxiosClient = client({
   },
 });
 
+const GOOGLE_MAPS_API_KEY = process.env.MAPS_API_KEY
+
 class GoogleMapsService {
   constructor(client) {
     this.client = client;
@@ -17,10 +19,10 @@ class GoogleMapsService {
   async retrieveCoordinates(placeId) {
     //This can be retried up to two times max
 
-    const url = `api/geocode/json?place_id=${placeId}&key=${process.env.GOOGLE_MAPS_API_KEY}`;
+    const url = `api/geocode/json?place_id=${placeId}&key=${GOOGLE_MAPS_API_KEY}`;
 
     const data = await this.client.get(url);
-
+    //TODO
     if (data.results.length < 1) throw new AppError(`Lol`);
 
     const location = data.results[0].geometry.location;
@@ -33,7 +35,7 @@ class GoogleMapsService {
   async getDirections(lat, lng, place_id) {
     //start is a lat,lng object and must be without a space  , end is a placeId
 
-    const url = `api/directions/json?destination=${lat},${lng}&mode=transit&transit_mode=bus&alternatives=true&units=metric&region=ng&origin=place_id:${place_id}&key=AIzaSyDdYME_PrW_WGGcJOdDpGLym58HFmFpdBw`;
+    const url = `api/directions/json?destination=${lat},${lng}&mode=transit&transit_mode=bus&alternatives=true&units=metric&region=ng&origin=place_id:${place_id}&key=${GOOGLE_MAPS_API_KEY}`;
     // we will switch this to use mapbox here
 
     const response = await this.client.get(url);

@@ -2,17 +2,17 @@ const crypto = require('crypto');
 const { decryptData } = require('./decrypt');
 
 
-function encryptData(data, key) {
-  
-    //  const data =  JSON.parse(info)
- 
-    const decryptedData =   Array.isArray(data.encryptedRouteArray) ? "[]" : decryptData(data.encryptedRouteArray, key) 
+function encryptData(data, key, hash) {
 
-    const newDataToEncrypt =  
-    JSON.stringify( JSON.parse(
-        decryptedData).push(data.location)
+  //  const data =  JSON.parse(info)
+
+  const decryptedData = Array.isArray(data.encryptedRouteArray) ? "[]" : decryptData(data.encryptedRouteArray, key)
+
+  const newDataToEncrypt =
+    JSON.stringify(JSON.parse(
+      decryptedData).push(data.location)
     )
-    console.log(newDataToEncrypt, "Siagabbs")
+  console.log(newDataToEncrypt, "Siagabbs")
 
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(key, 'hex'), iv);
